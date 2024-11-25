@@ -1,1 +1,4 @@
+// create or use existing database
 #!/usr/bin/env bash
+
+use my_db
