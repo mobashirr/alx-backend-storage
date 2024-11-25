@@ -1,1 +1,7 @@
+// get all documents from collection where name = ''
 #!/usr/bin/env bash
+
+ db.school.find({
+    'name':'Holberton school'
+ })
+ 
