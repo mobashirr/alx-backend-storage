@@ -1,1 +1,5 @@
+// get all documents from collection
 #!/usr/bin/env bash
+
+ db.school.find()
+ 
