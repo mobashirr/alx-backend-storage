@@ -1,1 +1,6 @@
+// delete documents from collection 
 #!/usr/bin/env bash
+
+db.school.deleteMany({
+    name: "Holberton school"
+})
