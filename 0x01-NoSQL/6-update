@@ -1,1 +1,7 @@
+// update document of collection to have a new attribute
 #!/usr/bin/env bash
+
+db.school.updateMany(
+    {'name': 'Holberton school'},
+    {'address':'972 Mission street'}
+    )
