@@ -14,29 +14,31 @@
 
 import redis
 import uuid
-from typing import Union, Callable, Optional
-from functools import wraps
+from typing import Callable
 
-
-def count_calls(method: Callable) -> Callable:
+def call_history(method: Callable) -> Callable:
     """
-    Decorator to count how many times a method is called.
-
+    Decorator to store function input arguments and output in Redis.
+    
     Args:
-        method (Callable): The method to wrap.
-
+        method (Callable): The method to decorate.
+        
     Returns:
-        Callable: The wrapped method with call count functionality.
+        Callable: The decorated method.
     """
-    @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """Wrapper function to increment call count."""
-        # Use the method's qualified name as the Redis key
-        key = method.__qualname__
-        # Increment the call count in Redis
-        self._redis.incr(key)
-        # Call the original method
-        return method(self, *args, **kwargs)
+        """Wrap the method to store call history."""
+        # Use the method's qualified name to form keys for inputs and outputs
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Normalize the input arguments (since Redis only stores strings, bytes, or numbers)
+        self._redis.rpush(input_key, str(args))  # Append inputs to the inputs list
+        # Call the original method and store its result
+        result = method(self, *args, **kwargs)
+        self._redis.rpush(output_key, str(result))  # Append outputs to the outputs list
+        return result
+    
     return wrapper
 
 class Cache:
@@ -45,29 +47,17 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @count_calls
-    def store(self, data: Union[str, bytes, int, float]) -> str:
+    @call_history
+    def store(self, data: str) -> str:
         """
         Store data in Redis with a random key.
-
+        
         Args:
-            data (str, bytes, int, float): The data to store.
-
+            data (str): The data to store.
+            
         Returns:
             str: The random key used to store the data.
         """
         key = str(uuid.uuid4())
         self._redis.set(key, data)
         return key
-
-    def get(self, key: str) -> Optional[bytes]:
-        """
-        Retrieve a value from Redis.
-
-        Args:
-            key (str): The Redis key to retrieve.
-
-        Returns:
-            Optional[bytes]: The retrieved value or None if the key does not exist.
-        """
-        return self._redis.get(key)
